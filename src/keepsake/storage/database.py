@@ -11,8 +11,21 @@ def connect_database(database_path: Path) -> sqlite3.Connection:
         )
     return connection
 
-def initialize_database(connection: sqlite3.Connection) -> None:
+def initialize_database(
+    connection: sqlite3.Connection,
+) -> None:
     with connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS photos (
+                id TEXT PRIMARY KEY,
+                path TEXT NOT NULL,
+                alt_text TEXT,
+                title TEXT
+            )
+            """
+        )
+
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS people (
