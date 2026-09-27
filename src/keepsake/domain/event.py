@@ -24,5 +24,3 @@ class Event:
 
         if self.ends_at is not None and self.ends_at < self.starts_at:
             raise ValueError("Event end time cannot be earlier than its start time")
-
-        

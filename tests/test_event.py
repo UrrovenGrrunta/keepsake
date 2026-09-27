@@ -3,7 +3,7 @@ import pytest
 from keepsake.domain.event import Event
 from keepsake.domain.person import Person
 
-from datetime import datetime as dt #// Not osu! reference 
+from datetime import datetime as dt #// Not osu! reference.
 
 
 def test_event_with_default_values() -> None:
