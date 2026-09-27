@@ -1,3 +1,4 @@
+from keepsake.domain.photo import Photo
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 import uuid
@@ -12,8 +13,16 @@ class TextBlock:
 
 
 @dataclass
+class PhotoBlock:
+    photo: Photo
+
+
+type JournalBlock =  TextBlock | PhotoBlock
+
+
+@dataclass
 class JournalEntry:
     title: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    blocks: list[TextBlock] = field(default_factory=list)
+    blocks: list[JournalBlock] = field(default_factory=list)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
