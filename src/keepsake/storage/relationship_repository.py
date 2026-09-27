@@ -7,6 +7,7 @@ from ..domain.relationship import (
     RelationshipSentiment,
     RelationshipSide,
 )
+from .database import atomic_write
 from .person_repository import get_person
 
 
@@ -38,7 +39,7 @@ def save_relationship(
     connection: sqlite3.Connection,
     relationship: Relationship,
 ) -> None:
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             INSERT INTO relationships (
@@ -96,7 +97,7 @@ def update_relationship(
     connection: sqlite3.Connection,
     relationship: Relationship,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             UPDATE relationships SET
@@ -122,7 +123,7 @@ def delete_relationship(
     connection: sqlite3.Connection,
     relationship_id: UUID,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             "DELETE FROM relationships WHERE id = ?",
             (str(relationship_id),),

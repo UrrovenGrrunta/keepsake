@@ -102,3 +102,32 @@ def test_relationship_failed_update_keeps_existing_links(tmp_path: Path) -> None
         assert loaded.person_b == bob
     finally:
         connection.close()
+
+
+def test_relationship_pair_is_unique_regardless_of_order(tmp_path: Path) -> None:
+    connection = connect_database(tmp_path / "keepsake.db")
+    initialize_database(connection)
+    alice = Person(name="Alice")
+    bob = Person(name="Bob")
+    charlie = Person(name="Charlie")
+    original = Relationship(alice, bob)
+    other = Relationship(bob, charlie)
+    try:
+        for person in (alice, bob, charlie):
+            save_person(connection, person)
+        save_relationship(connection, original)
+
+        with pytest.raises(sqlite3.IntegrityError):
+            save_relationship(connection, Relationship(bob, alice))
+
+        save_relationship(connection, other)
+        other.person_b = alice
+        with pytest.raises(sqlite3.IntegrityError):
+            update_relationship(connection, other)
+
+        assert get_relationship(connection, original.id) == original
+        loaded = get_relationship(connection, other.id)
+        assert loaded is not None
+        assert loaded.person_b == charlie
+    finally:
+        connection.close()

@@ -1,5 +1,21 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
+
+
+@contextmanager
+def atomic_write(connection: sqlite3.Connection) -> Iterator[None]:
+    """Keep a repository write atomic without committing the caller's transaction."""
+    connection.execute("SAVEPOINT repository_write")
+    try:
+        yield
+    except BaseException:
+        connection.execute("ROLLBACK TO SAVEPOINT repository_write")
+        connection.execute("RELEASE SAVEPOINT repository_write")
+        raise
+    else:
+        connection.execute("RELEASE SAVEPOINT repository_write")
 
 
 def connect_database(database_path: Path) -> sqlite3.Connection:
@@ -13,7 +29,7 @@ def connect_database(database_path: Path) -> sqlite3.Connection:
 def initialize_database(
     connection: sqlite3.Connection,
 ) -> None:
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS photos (
@@ -71,6 +87,15 @@ def initialize_database(
         )
         connection.execute(
             """
+            CREATE UNIQUE INDEX IF NOT EXISTS relationships_unordered_pair
+            ON relationships (
+                min(person_a_id, person_b_id),
+                max(person_a_id, person_b_id)
+            )
+            """
+        )
+        connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS events (
                 id TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
@@ -112,7 +137,7 @@ def initialize_database(
                 kind TEXT NOT NULL CHECK (kind IN ('text', 'photo')),
                 text TEXT,
                 photo_id TEXT REFERENCES photos (id)
-                    ON DELETE CASCADE,
+                    ON DELETE RESTRICT,
                 PRIMARY KEY (entry_id, position),
                 CHECK (
                     (kind = 'text' AND text IS NOT NULL AND photo_id IS NULL)
@@ -120,5 +145,18 @@ def initialize_database(
                     (kind = 'photo' AND text IS NULL AND photo_id IS NOT NULL)
                 )
             )
+            """
+        )
+        # Existing databases may still have the old CASCADE foreign key.
+        connection.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS prevent_used_photo_deletion
+            BEFORE DELETE ON photos
+            WHEN EXISTS (
+                SELECT 1 FROM journal_blocks WHERE photo_id = OLD.id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'photo is used by a journal block');
+            END
             """
         )

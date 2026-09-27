@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from ..domain.journal import JournalEntry, PhotoBlock, TextBlock
+from .database import atomic_write
 from .event_repository import get_event
 from .photo_repository import get_photo
 
@@ -68,7 +69,7 @@ def save_journal_entry(
     connection: sqlite3.Connection,
     entry: JournalEntry,
 ) -> None:
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             INSERT INTO journal_entries (id, title, created_at, event_id)
@@ -118,7 +119,7 @@ def update_journal_entry(
     connection: sqlite3.Connection,
     entry: JournalEntry,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             UPDATE journal_entries SET title = ?, created_at = ?, event_id = ?
@@ -144,7 +145,7 @@ def delete_journal_entry(
     connection: sqlite3.Connection,
     entry_id: UUID,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             "DELETE FROM journal_entries WHERE id = ?",
             (str(entry_id),),

@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from ..domain.event import Event
+from .database import atomic_write
 from .person_repository import get_person
 
 
@@ -57,7 +58,7 @@ def save_event(
     connection: sqlite3.Connection,
     event: Event,
 ) -> None:
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             INSERT INTO events (id, title, starts_at, ends_at, all_day)
@@ -112,7 +113,7 @@ def update_event(
     connection: sqlite3.Connection,
     event: Event,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             UPDATE events SET title = ?, starts_at = ?, ends_at = ?, all_day = ?
@@ -138,7 +139,7 @@ def delete_event(
     connection: sqlite3.Connection,
     event_id: UUID,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             "DELETE FROM events WHERE id = ?",
             (str(event_id),),

@@ -95,9 +95,13 @@ def test_journal_links_and_failed_writes(tmp_path: Path) -> None:
         assert loaded is not None
         assert loaded.event is None
 
-        delete_photo(connection, photo.id)
+        with pytest.raises(sqlite3.IntegrityError):
+            delete_photo(connection, photo.id)
         loaded = get_journal_entry(connection, entry.id)
         assert loaded is not None
-        assert loaded.blocks == [TextBlock("Start")]
+        assert loaded.blocks == [TextBlock("Start"), PhotoBlock(photo)]
+
+        assert delete_journal_entry(connection, entry.id)
+        assert delete_photo(connection, photo.id)
     finally:
         connection.close()

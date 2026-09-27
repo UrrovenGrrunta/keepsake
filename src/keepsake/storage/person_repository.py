@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ..domain.photo import Photo
 from ..domain.person import Person
+from .database import atomic_write
 
 
 def person_from_row(row: sqlite3.Row) -> Person:
@@ -35,7 +36,7 @@ def save_person(
     if person.profile_photo is not None:
         profile_photo_id = str(person.profile_photo.id)
 
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             INSERT INTO people (
@@ -118,7 +119,7 @@ def update_person(
     if person.profile_photo is not None:
         profile_photo_id = str(person.profile_photo.id)
 
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             UPDATE people
@@ -143,7 +144,7 @@ def delete_person(
     connection: sqlite3.Connection,
     person_id: UUID,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             DELETE FROM people

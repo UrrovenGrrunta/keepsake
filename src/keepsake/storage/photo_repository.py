@@ -4,13 +4,14 @@ from uuid import UUID
 from pathlib import Path
 
 from ..domain.photo import Photo
+from .database import atomic_write
 
 
 def save_photo(
     connection: sqlite3.Connection,
     photo: Photo,
 ) -> None:
-    with connection:
+    with atomic_write(connection):
         connection.execute(
             """
             INSERT INTO photos (id, path, alt_text, title)
@@ -75,7 +76,7 @@ def update_photo(
     connection: sqlite3.Connection,
     photo: Photo,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             UPDATE photos
@@ -97,7 +98,7 @@ def delete_photo(
     connection: sqlite3.Connection,
     photo_id: UUID,
 ) -> bool:
-    with connection:
+    with atomic_write(connection):
         cursor = connection.execute(
             """
             DELETE FROM photos
