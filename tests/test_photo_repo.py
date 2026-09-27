@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from keepsake.domain.person import Person
 from keepsake.domain.photo import Photo
 from keepsake.storage.database import (
     connect_database,
@@ -11,6 +12,10 @@ from keepsake.storage.photo_repository import (
     list_photos,
     save_photo,
     update_photo,
+)
+from keepsake.storage.person_repository import (
+    get_person,
+    save_person,
 )
 
 
@@ -81,5 +86,55 @@ def test_photo_can_be_updated_and_deleted(
         assert delete_photo(connection, photo.id) is True
         assert get_photo(connection, photo.id) is None
         assert delete_photo(connection, photo.id) is False
+    finally:
+        connection.close()
+
+
+def test_person_can_have_profile_photo(
+    tmp_path: Path,
+) -> None:
+    connection = create_test_database(tmp_path)
+    photo = Photo(
+        path=Path("photos/profile.jpg"),
+        alt_text="Profile photo",
+    )
+    person = Person(
+        name="Tim",
+        profile_photo=photo,
+    )
+
+    try:
+        save_photo(connection, photo)
+        save_person(connection, person)
+
+        assert get_person(connection, person.id) == person
+    finally:
+        connection.close()
+
+
+def test_deleting_profile_photo_keeps_person(
+    tmp_path: Path,
+) -> None:
+    connection = create_test_database(tmp_path)
+    photo = Photo(
+        path=Path("photos/profile.jpg"),
+    )
+    person = Person(
+        name="Tim",
+        profile_photo=photo,
+    )
+
+    try:
+        save_photo(connection, photo)
+        save_person(connection, person)
+        delete_photo(connection, photo.id)
+
+        loaded_person = get_person(
+            connection,
+            person.id,
+        )
+
+        assert loaded_person is not None
+        assert loaded_person.profile_photo is None
     finally:
         connection.close()

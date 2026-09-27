@@ -6,10 +6,9 @@ def connect_database(database_path: Path) -> sqlite3.Connection:
     database_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
-    connection.execute(
-        "PRAGMA foreign_keys = ON"
-        )
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
+
 
 def initialize_database(
     connection: sqlite3.Connection,
@@ -31,7 +30,25 @@ def initialize_database(
             CREATE TABLE IF NOT EXISTS people (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
-                bio TEXT
+                bio TEXT,
+                profile_photo_id TEXT,
+                FOREIGN KEY (profile_photo_id)
+                    REFERENCES photos (id)
+                    ON DELETE SET NULL
             )
             """
         )
+
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(people)")
+        }
+        if "profile_photo_id" not in columns:
+            connection.execute(
+                """
+                ALTER TABLE people
+                ADD COLUMN profile_photo_id TEXT
+                    REFERENCES photos (id)
+                    ON DELETE SET NULL
+                """
+            )
