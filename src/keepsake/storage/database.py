@@ -52,3 +52,73 @@ def initialize_database(
                     ON DELETE SET NULL
                 """
             )
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS relationships (
+                id TEXT PRIMARY KEY,
+                person_a_id TEXT NOT NULL REFERENCES people (id)
+                    ON DELETE CASCADE,
+                person_b_id TEXT NOT NULL REFERENCES people (id)
+                    ON DELETE CASCADE,
+                a_to_b_role TEXT NOT NULL,
+                a_to_b_sentiment TEXT NOT NULL,
+                b_to_a_role TEXT NOT NULL,
+                b_to_a_sentiment TEXT NOT NULL,
+                CHECK (person_a_id <> person_b_id)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS events (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                starts_at TEXT NOT NULL,
+                ends_at TEXT,
+                all_day INTEGER NOT NULL CHECK (all_day IN (0, 1))
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS event_participants (
+                event_id TEXT NOT NULL REFERENCES events (id)
+                    ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                person_id TEXT NOT NULL REFERENCES people (id)
+                    ON DELETE CASCADE,
+                PRIMARY KEY (event_id, position)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS journal_entries (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                created_at TEXT NOT NULL,
+                event_id TEXT REFERENCES events (id)
+                    ON DELETE SET NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS journal_blocks (
+                entry_id TEXT NOT NULL REFERENCES journal_entries (id)
+                    ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                kind TEXT NOT NULL CHECK (kind IN ('text', 'photo')),
+                text TEXT,
+                photo_id TEXT REFERENCES photos (id)
+                    ON DELETE CASCADE,
+                PRIMARY KEY (entry_id, position),
+                CHECK (
+                    (kind = 'text' AND text IS NOT NULL AND photo_id IS NULL)
+                    OR
+                    (kind = 'photo' AND text IS NULL AND photo_id IS NOT NULL)
+                )
+            )
+            """
+        )
