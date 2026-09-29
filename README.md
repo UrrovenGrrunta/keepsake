@@ -1,5 +1,7 @@
 # Keepsake
 
+**Project status: Active**
+
 Keepsake is a local-first personal journal written in Python. It is intended to keep journal entries, people, directed relationships, events, photos and, later, music in one private timeline.
 
 The project is in early development. The domain model and SQLite persistence layer are implemented; the next milestone is a minimal application bootstrap before GUI work begins.
